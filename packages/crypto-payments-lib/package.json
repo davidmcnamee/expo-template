@@ -14,6 +14,13 @@
   "devDependencies": {
     "@types/react": "^18.0.0",
     "@types/react-native": "^0.72.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "backend": "*"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.83.0",
+    "@trpc/client": "^11.4.3",
+    "@trpc/react-query": "^11.4.3",
+    "@trpc/tanstack-react-query": "^11.4.3"
   }
 }
