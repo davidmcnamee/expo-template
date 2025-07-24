@@ -16,4 +16,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Ensure unstable_allowRequireContext is enabled for expo-router
+config.resolver.unstable_enablePackageExports = true;
+
+// Silence package.json export warnings
+config.resolver.silencePackageWarnings = true;
+
 module.exports = config;

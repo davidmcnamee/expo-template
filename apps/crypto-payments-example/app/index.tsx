@@ -1,21 +1,13 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { PaymentView, PaymentsLibProvider } from 'crypto-payments-lib';
+import { PaymentView } from 'crypto-payments-lib';
 
-function AppContent() {
+export default function HomePage() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Crypto Payments Example</Text>
       <PaymentView />
     </View>
-  );
-}
-
-export default function App() {
-  return (
-    <PaymentsLibProvider baseUrl="http://localhost:3000/trpc">
-      <AppContent />
-    </PaymentsLibProvider>
   );
 }
 
