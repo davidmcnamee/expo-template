@@ -1,27 +1,12 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { PaymentView } from 'crypto-payments-lib';
+import React from 'react'
+import { Text, View } from 'react-native'
+import { PaymentsLibProvider, PaymentView } from 'crypto-payments-lib'
 
-export default function HomePage() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Crypto Payments Example</Text>
-      <PaymentView />
+export default function Home() {
+    return <View>
+        <Text>hello</Text>
+        <PaymentsLibProvider baseUrl="http://localhost:3000/trpc">
+            <PaymentView />
+        </PaymentsLibProvider>
     </View>
-  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 30,
-  },
-});
