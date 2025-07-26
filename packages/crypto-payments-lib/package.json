@@ -18,9 +18,5 @@
     "@types/react-native": "^0.72.0",
     "backend": "*",
     "typescript": "^5.0.0"
-  },
-  "scripts": {
-    "android": "expo run:android",
-    "ios": "expo run:ios"
   }
 }

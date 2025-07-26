@@ -3,6 +3,7 @@ import cors from 'cors';
 import { initTRPC } from '@trpc/server';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { z } from 'zod';
+import { prisma } from './db';
 
 const t = initTRPC.create();
 
@@ -31,15 +32,20 @@ export const appRouter = t.router({
     .input(z.object({
       amount: z.number().positive(),
       currency: z.string(),
-      recipient: z.string()
+      recipient: z.string(),
+      description: z.string().optional()
     }))
-    .mutation(({ input }) => {
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        ...input,
-        status: 'pending',
-        createdAt: new Date().toISOString()
-      };
+    .mutation(async ({ input }) => {
+      const payment = await prisma.payment.create({
+        data: {
+          amount: input.amount,
+          currency: input.currency,
+          recipient: input.recipient,
+          description: input.description,
+          status: 'pending'
+        }
+      });
+      return payment;
     })
 });
 

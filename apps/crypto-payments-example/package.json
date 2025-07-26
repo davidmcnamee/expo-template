@@ -2,13 +2,6 @@
   "name": "crypto-payments-example",
   "version": "1.0.0",
   "main": "expo-router/entry",
-  "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
-    "deploy": "npx expo export -p web && npx eas-cli@latest deploy"
-  },
   "dependencies": {
     "crypto-payments-lib": "*",
     "expo": "^53.0.4",
@@ -29,5 +22,9 @@
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
-  "private": true
+  "private": true,
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  }
 }

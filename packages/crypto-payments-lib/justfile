@@ -1,7 +1,0 @@
-
-build:
-    yarn tsc
-
-# Watch mode for development
-dev:
-    yarn tsc --watch
