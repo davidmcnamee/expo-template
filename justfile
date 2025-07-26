@@ -7,7 +7,7 @@ dev:
         --names "backend,lib,expo" \
         "yarn workspace backend dev" \
         "just packages/crypto-payments-lib/dev" \
-        "yarn workspace crypto-payments-example start --clear"
+        "yarn workspace crypto-payments-example expo run:android"
 
 # Build backend and lib
 build: install

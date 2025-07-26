@@ -1,7 +1,6 @@
 
 build:
     yarn tsc
-    yarn expo prebuild
 
 # Watch mode for development
 dev:

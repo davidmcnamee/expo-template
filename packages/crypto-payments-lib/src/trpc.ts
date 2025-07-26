@@ -5,6 +5,7 @@ import {
 } from "@trpc/client";
 import { createTRPCContext } from "@trpc/tanstack-react-query";
 import type { AppRouter } from "backend";
+import { Platform } from "react-native";
 
 export const { TRPCProvider, useTRPC, useTRPCClient } =
   createTRPCContext<AppRouter>();
@@ -16,6 +17,7 @@ export function createTrpcClient({ baseUrl }: { baseUrl: string }) {
   if(!baseUrl.endsWith('/trpc')) {
     throw new Error('Invalid base URL, must end with /trpc');
   }
+
   const wsClient = createWSClient({
     url: baseUrl.replace('http://', 'ws://').replace('https://', 'wss://'),
   });
@@ -24,7 +26,6 @@ export function createTrpcClient({ baseUrl }: { baseUrl: string }) {
     links: [
       splitLink({
         condition(op) {
-          // Use WebSocket for subscriptions, HTTP for queries and mutations
           return op.type === "subscription";
         },
         true: wsLink({
@@ -32,6 +33,9 @@ export function createTrpcClient({ baseUrl }: { baseUrl: string }) {
         }),
         false: httpBatchLink({
           url: baseUrl,
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }),
       }),
     ],

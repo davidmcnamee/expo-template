@@ -7,16 +7,20 @@
     "react": "*",
     "react-native": "*"
   },
+  "dependencies": {
+    "@tanstack/react-query": "^5.83.0",
+    "@trpc/client": "^11.4.3",
+    "@trpc/react-query": "^11.4.3",
+    "@trpc/tanstack-react-query": "^11.4.3"
+  },
   "devDependencies": {
     "@types/react": "^18.0.0",
     "@types/react-native": "^0.72.0",
     "backend": "*",
     "typescript": "^5.0.0"
   },
-  "dependencies": {
-    "@tanstack/react-query": "^5.83.0",
-    "@trpc/client": "^11.4.3",
-    "@trpc/react-query": "^11.4.3",
-    "@trpc/tanstack-react-query": "^11.4.3"
+  "scripts": {
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   }
 }
