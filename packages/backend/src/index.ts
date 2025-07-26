@@ -2,9 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import { initTRPC } from '@trpc/server';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
+import { applyWSSHandler } from '@trpc/server/adapters/ws';
 import { z } from 'zod';
 import { prisma } from './db';
+import { createServer } from 'http';
+import { WebSocketServer } from 'ws';
+import { createEventBus, PaymentEvent, observableToAsyncGenerator } from './events';
 
+// Choose event bus type based on environment
+const eventBusType = process.env.NODE_ENV === 'production' ? 'hybrid' : 'memory';
+const eventBus = createEventBus(eventBusType, process.env.REDIS_URL);
 const t = initTRPC.create();
 
 export const appRouter = t.router({
@@ -45,13 +52,48 @@ export const appRouter = t.router({
           status: 'pending'
         }
       });
+      
+      // Emit payment update via event bus
+      await eventBus.emit({
+        type: 'created' as const,
+        payment,
+        timestamp: new Date(),
+        userId: payment.id // or actual user ID if you have authentication
+      });
+      
       return payment;
+    }),
+
+  onPaymentUpdate: t.procedure
+    .subscription(async function* () {
+      yield* observableToAsyncGenerator(
+        eventBus.subscribe(),
+        (event: PaymentEvent) => ({
+          type: event.type,
+          payment: event.payment,
+          timestamp: event.timestamp
+        })
+      );
+    }),
+
+  onUserPaymentUpdate: t.procedure
+    .input(z.object({ userId: z.string() }))
+    .subscription(async function* ({ input }) {
+      yield* observableToAsyncGenerator(
+        eventBus.subscribeByUserId(input.userId),
+        (event: PaymentEvent) => ({
+          type: event.type,
+          payment: event.payment,
+          timestamp: event.timestamp
+        })
+      );
     })
 });
 
 export type AppRouter = typeof appRouter;
 
 const app = express();
+const server = createServer(app);
 const port = process.env.PORT || 3000;
 
 app.use(cors());
@@ -66,6 +108,25 @@ app.get('/', (req, res) => {
   res.json({ message: 'tRPC Backend server is running!' });
 });
 
-app.listen(port, () => {
+// WebSocket server for subscriptions
+const wss = new WebSocketServer({ server });
+const handler = applyWSSHandler({
+  wss,
+  router: appRouter,
+  createContext: () => ({})
+});
+
+server.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  console.log(`WebSocket server running on ws://localhost:${port}`);
+});
+
+process.on('SIGTERM', async () => {
+  handler.broadcastReconnectNotification();
+  await eventBus.close();
+});
+
+process.on('SIGINT', async () => {
+  await eventBus.close();
+  process.exit(0);
 });
