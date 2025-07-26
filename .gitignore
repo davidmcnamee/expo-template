@@ -13,3 +13,4 @@ dist
 
 .expo
 *.db
+Pulumi.*.yaml

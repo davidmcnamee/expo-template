@@ -1,0 +1,15 @@
+{
+  "name": "app-infra",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.0.0",
+    "@pulumi/docker": "^4.0.0",
+    "@pulumi/command": "^0.9.0",
+    "@pulumi/random": "^4.0.0"
+  }
+}

@@ -1,3 +1,6 @@
+
+set dotenv-load
+
 # Run all services concurrently (backend, lib watch, expo server)
 dev:
     just migrate-dev -n 'dev'
@@ -30,3 +33,16 @@ migrate-dev *args:
 
 migrate-deploy *args:
     cd packages/backend && yarn prisma migrate deploy {{args}}
+
+# Provision Hetzner Cloud server (one-time)
+provision name="side-projects" type="cax11" location="nbg1" image="ubuntu-22.04":
+    hcloud server create --type {{type}} --image {{image}} --location {{location}} --name {{name}} --ssh-key default
+    @echo "Server {{name}} created, fetching ip..."
+    hcloud server describe {{name}} -o json | jq -r '.public_net.ipv4.ip'
+
+# Deploy app infrastructure
+deploy:
+    cd packages/app-infra && pulumi config set serverUrl "$PULUMI_CONFIG_serverUrl"
+    cd packages/app-infra && pulumi config set sshKey "$PULUMI_CONFIG_sshKey"
+    cd packages/app-infra && pulumi config set domain "$PULUMI_CONFIG_domain"
+    cd packages/app-infra && pulumi up --yes
