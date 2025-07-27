@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { initTRPC } from '@trpc/server';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { applyWSSHandler } from '@trpc/server/adapters/ws';
@@ -99,13 +100,36 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.use('/trpc', createExpressMiddleware({
-  router: appRouter,
-  createContext: () => ({})
+// Serve static files from the Expo web build
+const webBuildPath = path.join(__dirname, '../../../apps/crypto-payments-example/dist');
+app.use(express.static(webBuildPath, {
+  dotfiles: 'deny',        // Block access to dotfiles
+  index: ['index.html'],   // Only serve index.html as directory index
+  redirect: false,         // Don't redirect trailing slashes
+  setHeaders: (res, filePath) => {
+    // Security headers for static files
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+  }
 }));
 
-app.get('/', (req, res) => {
-  res.json({ message: 'tRPC Backend server is running!' });
+
+app.use('/trpc', createExpressMiddleware({
+  router: appRouter,
+  createContext: () => {
+    return {}
+  }
+}));
+
+// Serve the Expo web app for any non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(webBuildPath, 'index.html'), (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err);
+      res.status(404).send('Web app not found - check if expo export ran successfully');
+    }
+  });
 });
 
 // WebSocket server for subscriptions
@@ -117,8 +141,8 @@ const handler = applyWSSHandler({
 });
 
 server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  console.log(`WebSocket server running on ws://localhost:${port}`);
+  console.info(`Server running on port ${port}`);
+  console.info(`WebSocket server running on ws://localhost:${port}`);
 });
 
 process.on('SIGTERM', async () => {
@@ -130,3 +154,6 @@ process.on('SIGINT', async () => {
   await eventBus.close();
   process.exit(0);
 });
+
+console.info('===Server init===')
+console.error('===Server init===')

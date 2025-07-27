@@ -8,13 +8,11 @@ import {
   StatusBar,
 } from "react-native";
 import { PaymentsLibProvider, PaymentView } from "crypto-payments-lib";
+import { isDevice } from "expo-device";
 
 export default function Home() {
-  const baseUrl =
-    process.env.EXPO_PUBLIC_API_URL ??
-    (Platform.OS === "android"
-      ? "http://10.0.2.2:3000/trpc"
-      : "http://localhost:3000/trpc");
+  const baseUrl = getApiUrl();
+  console.log('using backend url', baseUrl)
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,3 +47,13 @@ const styles = StyleSheet.create({
     padding: 5,
   },
 });
+
+
+function getApiUrl() {
+    if(process.env.NODE_ENV === 'production') {
+        return process.env.EXPO_PUBLIC_API_URL
+    }
+    return (Platform.OS === "android" && !isDevice)
+        ? "http://10.0.2.2:3000/trpc"
+        : "http://localhost:3000/trpc"
+}

@@ -5,9 +5,9 @@ import * as fs from "fs";
 
 // Stack configuration
 const config = new pulumi.Config();
-const serverUrl = config.require("serverUrl"); // e.g., "root@1.2.3.4"
-const sshKeyPath = config.require("sshKey"); // SSH private key path
-const domain = config.require("domain"); // e.g., "example.mcnamee.io"
+const serverUrl = config.require("SERVER_URL"); // e.g., "root@1.2.3.4"
+const sshKeyPath = config.require("SSH_KEY"); // SSH private key path
+const domain = config.require("DOMAIN"); // e.g., "example.mcnamee.io"
 const sshKey = fs.readFileSync(sshKeyPath, "utf8");
 
 // Generate random passwords
@@ -21,9 +21,20 @@ const redisPassword = new random.RandomPassword("redis-password", {
     special: false,
 });
 
-// Sync project files to server
+// Generate hash of source files to trigger redeployment on changes
+const hashCommand = `cd ../../ && git ls-files | sort | xargs cat | sha256sum | cut -d' ' -f1`;
+const sourceHash = new command.local.Command("source-hash", {
+    create: hashCommand,
+    update: hashCommand,
+    triggers: [Date.now()], // Force re-run on every deploy
+});
+
+// Sync project files to server (only git-tracked files)
+const syncCommand = `cd ../../ && git ls-files | rsync -avz --files-from=- . ${serverUrl}:/opt/crypto-payments/`;
 const syncFiles = new command.local.Command("sync-files", {
-    create: `cd ../../ && rsync -avz --exclude node_modules --exclude dist --exclude .git --exclude packages/app-infra . ${serverUrl}:/opt/crypto-payments/`,
+    create: syncCommand,
+    update: syncCommand,
+    triggers: [sourceHash.stdout], // Trigger when source files change
 });
 
 // Create .env file on server
@@ -42,6 +53,7 @@ POSTGRES_PASSWORD=${postgresPassword.result}
 REDIS_PASSWORD=${redisPassword.result}
 EOF
     `,
+    triggers: [syncFiles.stdout], // Trigger when syncFiles updates
 }, { dependsOn: [syncFiles] });
 
 // Install dependencies on server (only once)
@@ -176,20 +188,23 @@ systemctl reload nginx
 }, { dependsOn: [setupServices] });
 
 // Build and run migrations
+const buildCommand = `
+cd /opt/crypto-payments
+yarn install
+just build
+cd packages/backend && npx prisma generate
+just migrate-deploy
+`;
 const buildAndMigrate = new command.remote.Command("build-and-migrate", {
     connection: {
         host: serverUrl.split("@")[1],
         user: serverUrl.split("@")[0],
         privateKey: sshKey,
     },
-    create: `
-cd /opt/crypto-payments
-yarn install
-just build
-cd packages/backend && npx prisma generate
-just migrate-deploy
-    `,
-}, { dependsOn: [setupNginx] });
+    create: buildCommand,
+    update: buildCommand,
+    triggers: [syncFiles.stdout], // Trigger when syncFiles updates
+}, { dependsOn: [setupNginx, syncFiles] });
 
 // Start the backend application
 const startApp = new command.remote.Command("start-app", {
@@ -210,6 +225,14 @@ pm2 save
 pm2 startup systemd -u root --hp /root || true
 echo "Backend started with PM2"
     `,
+    update: `
+cd /opt/crypto-payments
+# Restart the PM2 process
+pm2 restart crypto-payments-backend || pm2 start packages/backend/dist/index.js --name crypto-payments-backend --log backend.log
+pm2 save
+echo "Backend restarted with PM2"
+    `,
+    triggers: [buildAndMigrate.stdout], // Trigger when buildAndMigrate updates
 }, { dependsOn: [buildAndMigrate] });
 
 // Setup SSL certificate with certbot
